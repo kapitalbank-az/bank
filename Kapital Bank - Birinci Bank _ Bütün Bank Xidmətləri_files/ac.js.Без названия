@@ -1,0 +1,207 @@
+﻿/*
+ * AcAnalytics Js
+ * @version 1.0.0
+ * @author AltZeren
+ */
+
+window.ac = function () { (window._acq = window._acq || []).push(arguments); acAnalytics.queue.process(); };
+var _acRequestUrl = "https://analytics.tvlyzer.com/";
+window.acAnalytics = {
+    websiteId: "",
+    accountId: "",
+    initialize: function () {
+        acAnalytics.queue.process();
+    },
+    queue: {
+        isProcessing: false,
+        deQueue: function () {
+            return window._acq.shift();
+        },
+        isEmpty: function () {
+            return window._acq.length == 0;
+        },
+        process: function (item) {
+            if (!acAnalytics.queue.isProcessing) {
+                acAnalytics.queue.isProcessing = true;
+
+                acAnalytics.account.get();
+
+                while (!acAnalytics.queue.isEmpty()) {
+                    var queueItem = acAnalytics.queue.deQueue();
+
+                    if (queueItem && queueItem.length > 0) {
+                        var actionName = queueItem[0];
+
+                        if (actionName == "init") {
+                            if (queueItem.length == 2) {
+                                acAnalytics.websiteId = queueItem[1];
+                            }
+                            else {
+                                throw "Wrong parameter.";
+                            }
+                        }
+                        else {
+                            if (acAnalytics.websiteId) {
+                                if (actionName == "event") {
+                                    if (queueItem.length == 2 || queueItem.length == 3) {
+                                        var eventName = queueItem[1];
+                                        if (eventName) {
+                                            var eventParams = "";
+                                            if (queueItem.length == 3) {
+                                                eventParams = queueItem[2];
+                                            }
+                                            var data = {
+                                                WebsiteId: acAnalytics.websiteId,
+                                                AccountId: acAnalytics.accountId,
+                                                ReferralUrl: document.referrer,
+                                                RequestUrl: window.location.href,
+                                                EventName: eventName,
+                                                EventParams: eventParams
+                                            };
+                                            acAnalytics.request("POST", _acRequestUrl + "api/v1/TrackEvent", data);
+                                        }
+                                        else {
+                                            throw "Wrong parameter.";
+                                        }
+                                    }
+                                    else {
+                                        throw "Wrong parameter.";
+                                    }
+                                }
+                                else if (actionName == "conversion") {
+                                    if (queueItem.length == 2) {
+                                        var orderData = queueItem[1];
+                                        var orderId = orderData["orderId"];
+                                        var orderTotal = orderData["orderTotal"];
+                                        var itemCount = orderData["itemCount"];
+                                        var currencyCode = orderData["currencyCode"];
+                                        if (!orderId || !orderTotal || !itemCount || !currencyCode) {
+                                            throw "Wrong parameter.";
+                                        }
+                                        if (isNaN(orderTotal)) {
+                                            throw "Check order total";
+                                        }
+                                        if (isNaN(orderTotal)) {
+                                            throw "Check item count";
+                                        }
+                                        var data = {
+                                            WebsiteId: acAnalytics.websiteId,
+                                            AccountId: acAnalytics.accountId,
+                                            ReferralUrl: document.referrer,
+                                            RequestUrl: window.location.href,
+                                            OrderId: orderId,
+                                            OrderTotal: orderTotal,
+                                            ItemCount: itemCount,
+                                            CurrencyCode: currencyCode
+                                        };
+                                        acAnalytics.request("POST", _acRequestUrl + "api/v1/TrackConversion", data);
+                                    }
+                                    else {
+                                        throw "Wrong parameter.";
+                                    }
+                                }
+                            }
+                            else {
+                                throw "Set your websiteId id.";
+                            }
+                        }
+                    }
+                    else {
+                        throw "Send action name";
+                    }
+                }
+
+                acAnalytics.queue.isProcessing = false;
+            }
+        }
+    },
+    account: {
+        get: function () {
+            if (acAnalytics.accountId) {
+                return acAnalytics.accountId;
+            }
+
+            var acQueryParameter = acAnalytics.queryParameters.get("_ac");
+            if (!!acQueryParameter) {
+                var accountId = acQueryParameter;
+                acAnalytics.cookie.set("_ac", accountId, 365 * 10);
+                acAnalytics.accountId = accountId;
+            }
+            else {
+                var acCookie = acAnalytics.cookie.get("_ac");
+                if (!!acCookie) {
+                    acAnalytics.accountId = acCookie;
+                }
+                else {
+                    var accountId = acAnalytics.uuid.generate();
+                    acAnalytics.cookie.set("_ac", accountId, 365 * 10);
+                    acAnalytics.accountId = accountId;
+                }
+            }
+
+            return acAnalytics.accountId;
+        }
+    },
+    cookie: {
+        set: function (name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        },
+        get: function (name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        },
+        erase: function (name) {
+            document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+    },
+    uuid: {
+        generate: function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+    },
+    queryParameters: {
+        get: function (name) {
+            let queryParameters = new URL(document.location.toString()).searchParams;
+            return queryParameters.get(name);
+        }
+    },
+    request: function (method, url, data) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                var response = JSON.parse(xmlHttp.responseText);
+                if (!response.Success) {
+                    throw "Common error";
+                }
+            }
+            else if (xmlHttp.readyState == 4) {
+                console.log(xmlHttp.responseText);
+            }
+        }
+        xmlHttp.open(method, url);
+        if (method == "GET") {
+            xmlHttp.send();
+        }
+        else {
+            xmlHttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xmlHttp.send(JSON.stringify(data))
+        }
+    }
+}
+
+acAnalytics.initialize();
