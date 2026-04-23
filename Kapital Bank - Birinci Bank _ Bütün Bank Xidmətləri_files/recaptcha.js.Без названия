@@ -1,0 +1,12 @@
+function recaptcha(callback) {
+    if ($('#g-recaptcha-response').length) {
+        grecaptcha.ready(function () {
+            grecaptcha.execute(window.site_key, {action: 'submit'}).then(function (token) {
+                $('#g-recaptcha-response').val(token);
+                callback();
+            });
+        });
+    } else {
+        callback();
+    }
+}

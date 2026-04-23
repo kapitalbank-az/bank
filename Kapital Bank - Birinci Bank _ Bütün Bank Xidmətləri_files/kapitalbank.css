@@ -1,0 +1,18 @@
+﻿div, p, span {
+    font-size: 14px !important;
+}
+
+button.green-btn.short-btn[onclick*="videoCallDisabled"] {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    background-color: #ccc !important;
+    color: #666 !important;
+}
+
+button.green-btn.short-btn[onclick*="videoCallDisabled"]:hover {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background-color: #ccc !important;
+    color: #666 !important;
+}

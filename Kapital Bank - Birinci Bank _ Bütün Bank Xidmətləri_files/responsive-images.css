@@ -1,0 +1,27 @@
+/* Jetlink Widget Responsive Images CSS */
+
+/* Markdown içinde gelen resimlerin widget genişliğine göre ölçeklenmesi */
+.markdown-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+
+/* Message ve widget-body içindeki tüm resimler için ölçekleme */
+.widget-body-wrap .widget-body .conv .you .you-text img,
+.widget-body-wrap .widget-body .conv .me .me-text img,
+.widget-body-wrap .widget-body .conv-jetlink .full-width-conv .talk-text img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+
+/* Stream formatında gelen içerik için ölçekleme */
+[data-markdown] img {
+    max-width: 90% !important;
+    height: auto !important;
+} 
